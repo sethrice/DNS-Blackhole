@@ -1,0 +1,185 @@
+#!/bin/bash
+# Get list of bad Domain Names to block in DNS
+##############
+# Constants
+NOW=$(date +"%Y%m%d%H%M%S")
+BEFORE=$(grep -E '([0-9]{14})' old/blockeddomain.hosts | awk '{print $1}' | cut -c 5-10)
+
+function COUNTS {
+	flcount=$(wc -l /opt/blackhole-lists/full-list | awk '{print $1}')
+	fpcount=$(wc -l /opt/blackhole-lists/full-parsed | awk '{print $1}')
+	echo "Full List: $flcount Items"
+	echo "Full Parsed: $fpcount Items"
+	}
+#
+#
+####################
+# Backup old files
+echo
+cd /opt/blackhole-lists
+echo "Create Backups of Current Files"
+$(cd /opt/blackhole-lists/old/ && tar -zcvf ../old-blackhole-"$BEFORE".tgz . && cd ..)
+#
+#
+########################################################################################
+# Get New Files & process to linux perfered format for parsing, then parse if needed
+echo 
+echo "Getting Updated Files with Domain names of interest"
+wget http://mirror1.malwaredomains.com/files/spywaredomains.zones
+dos2unix spywaredomains.zones
+grep -vE '(//)' spywaredomains.zones | awk -F'"' '{print $2}' > just-spywaredomains
+####################
+wget http://mirror1.malwaredomains.com/files/justdomains
+dos2unix justdomains
+####################
+wget http://mirror1.malwaredomains.com/files/malwaredomains.zones
+dos2unix malwaredomains.zones
+grep -vE '(//)' malwaredomains.zones | awk -F'"' '{print $2}' > just-malwaredomains
+####################
+wget http://mirror1.malwaredomains.com/files/db.blacklist
+dos2unix db.blacklist
+grep 1.2.3.4 db.blacklist | grep -vE '(\*)' | awk '{print $1}' | sed 's/\.$//' > just-db-blacklist
+####################
+wget http://mirror1.malwaredomains.com/files/immortal_domains.txt
+dos2unix immortal_domains.txt
+grep -vE '(^#)' immortal_domains.txt > just-immortal-domains
+####################
+wget http://mirror1.malwaredomains.com/files/url_shorteners.txt
+dos2unix url_shortners.txt
+# The file that comes down is sorta horked, so we are removing those horked lines with grep -v
+awk '{print $1}' url_shorteners.txt | grep -vE '(#|\*)' > just-url-shortners
+####################
+wget http://winhelp2002.mvps.org/hosts.txt
+dos2unix hosts.txt
+grep 0.0.0.0 hosts.txt | awk -F' ' '{print $2}' > just-hosts-domains
+####################
+wget http://www.malwaredomainlist.com/mdlcsv.php
+# Covers http://www.malwaredomainlist.com/updatescsv.php as well
+dos2unix mdlcsv.php
+awk -F',' '{print $2}' mdlcsv.php | awk -F'/' '{print $1}' | sort -u | grep -v '"-"' | tr -d '"' | grep -v '^$' > just-MDL-domains
+####################
+#wget https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt
+#dos2unix RW_DOMBL.txt
+#grep -vE '(#)' RW_DOMBL.txt > just-rwdombl-domains
+wget https://urlhaus.abuse.ch/downloads/hostfile
+dos2unix hostfile
+grep -vE '(#)' hostfile | awk '{print $2}' > just-urlhaus-domains
+####################
+wget -O networksec-blocklist http://www.networksec.org/grabbho/block.txt
+dos2unix networksec-blocklist
+grep -vE '(#)' networksec-blocklist | sed '/^$/d' > just-networksec-domains
+####################
+wget -O abuse_zeus_blocklist https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist
+dos2unix abuse_zeus_blocklist
+grep -vE '(#)' abuse_zeus_blocklist | sed '/^$/d' > just-abuse-zeus-domains
+####################
+#wget -O abuse_freodotracker_blocklist https://feodotracker.abuse.ch/blocklist/?download=domainblocklist
+#dos2unix abuse_freodotracker_blocklist
+#grep -vE '(#)' abuse_freodotracker_blocklist | sed '/^$/d' > just-abuse-freodo-domains
+####################
+wget -O abuse_cryptowall_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/CW_C2_DOMBL.txt
+dos2unix abuse_cryptowall_c2_blocklist
+grep -vE '(#)' abuse_cryptowall_c2_blocklist | sed '/^$/d' > just-abuse-cryptowallc2-domains
+####################
+wget -O abuse_teslacrypt_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/TC_C2_DOMBL.txt
+dos2unix abuse_teslacrypt_c2_blocklist
+grep -vE '(#)' abuse_teslacrypt_c2_blocklist | sed '/^$/d' > just-abuse-teslacryptc2-domains
+####################
+wget -O abuse_locky_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/LY_C2_DOMBL.txt
+dos2unix abuse_locky_c2_blocklist
+grep -vE '(#)' abuse_locky_c2_blocklist | sed '/^$/d' > just-abuse-lockyc2-domains
+####################
+wget -O abuse_torrentlocker_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/TL_C2_DOMBL.txt
+dos2unix abuse_torrentlocker_c2_blocklist
+grep -vE '(#)' abuse_torrentlocker_c2_blocklist | sed '/^$/d' > just-abuse-torrentlockerc2-domains
+####################
+wget -O sans-suspiciousdomains_high.txt https://isc.sans.edu/feeds/suspiciousdomains_High.txt
+dos2unix sans-suspiciousdomains_high.txt
+grep -vE '(#)' sans-suspiciousdomains_high.txt | tail -n+2 > just-sans-high-domains
+####################
+wget -O sans-suspiciousdomains_medium.txt https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt
+dos2unix sans-suspiciousdomains_medium.txt
+grep -vE '(#)' sans-suspiciousdomains_medium.txt | tail -n+2 > just-sans-medium-domains
+####################
+wget -O sans-suspiciousdomains_low.txt https://isc.sans.edu/feeds/suspiciousdomains_Low.txt
+dos2unix sans-suspiciousdomains_low.txt
+grep -vE '(#)' sans-suspiciousdomains_low.txt | tail -n+2 > just-sans-low-domains
+#
+#
+####################################################
+# Move old files to folder for backup on next round
+echo
+echo "Moving old files to 'old/'"
+mv -f *.1 old/
+cp myblocklist old/
+cp full-list old/
+cp full-parsed old/
+###############################
+# Compile in to full-list file
+COUNTS
+echo
+echo "Compile into Full-List"
+cat just-spywaredomains > full-list
+cat justdomains >> full-list
+cat just-malwaredomains >> full-list
+cat just-db-blacklist >> full-list
+cat just-immortal-domains >> full-list
+cat just-hosts-domains >> full-list
+cat just-MDL-domains >> full-list
+#cat just-url-shortners >> full-list
+#cat just-rwdombl-domains >> full-list
+cat just-urlhaus-domains >> full-list
+cat just-networksec-domains >> full-list
+cat just-abuse-zeus-domains >> full-list
+#cat just-abuse-freodo-domains >> full-list
+cat just-abuse-cryptowallc2-domains >> full-list
+cat just-abuse-teslacryptc2-domains >> full-list
+cat just-abuse-lockyc2-domains >> full-list
+cat just-abuse-torrentlockerc2-domains >> full-list
+cat just-sans-high-domains >> full-list
+cat just-sans-medium-domains >> full-list
+#cat just-sans-low-domains >> full-list
+cat myblocklist >> full-list
+#
+########################################################################
+# Pull out duplicates and other items that might show that we dont want
+echo
+echo "Compile Full-Parsed file"
+sed 's/.*/\L&/g' < full-list | grep -v '0.0.0.0' | sort -u > full-parsed
+COUNTS
+#
+#
+####################################
+# Copy current DNS files for backup
+echo
+echo "Backup old blackhole* Zones to /var/named/old/"
+cp -f /var/named/blackhole.zones old/
+cp -f /var/named/blockeddomain.hosts old/
+#
+#
+#############################################
+# Create new Zone File from full-parsed list
+echo
+echo "Create /var/named/blackhole.zones file"
+for i in `cat full-parsed`; do echo "zone \"$i\" {type master; file \"/var/named/blockeddomain.hosts\";};" ; done > blackhole.zones
+#
+##########################################################
+# Copy zone file to named folder path, & change ownership
+cp blackhole.zones /var/named/
+chown root:named /var/named/blackhole.zones
+#
+#######################################
+# Update serial number & restart named
+echo
+echo "Update Serial of Zone file to include - $NOW"
+sed -i -e "s/[0-9]\{14\}/$NOW/" /var/named/blockeddomain.hosts
+echo
+echo "Restarting Named"
+service named restart
+#
+#########################################
+# Delete old tar backups
+echo
+echo "Cleanup old Files"
+find /opt/blackhole-lists/old-blackhole-*.tgz -maxdepth 0 -type f -mtime +2 -exec rm -f {} \;
+echo "Update Complete"
