@@ -3,7 +3,7 @@
 ##############
 # Constants
 NOW=$(date +"%Y%m%d%H%M%S")
-BEFORE=$(grep -E '([0-9]{14})' old/blockeddomain.hosts | awk '{print $1}' | cut -c 5-10)
+BEFORE=$(grep -E '([0-9]{14})' /opt/blackhole-lists/old/blockeddomain.hosts | awk '{print $1}' | cut -c 5-10)
 
 function COUNTS {
 	flcount=$(wc -l /opt/blackhole-lists/full-list | awk '{print $1}')
@@ -23,7 +23,7 @@ $(cd /opt/blackhole-lists/old/ && tar -zcvf ../old-blackhole-"$BEFORE".tgz . && 
 #
 ########################################################################################
 # Get New Files & process to linux perfered format for parsing, then parse if needed
-echo 
+echo
 echo "Getting Updated Files with Domain names of interest"
 wget http://mirror1.malwaredomains.com/files/spywaredomains.zones
 dos2unix spywaredomains.zones
