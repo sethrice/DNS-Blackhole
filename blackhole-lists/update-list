@@ -25,85 +25,145 @@ $(cd /opt/blackhole-lists/old/ && tar -zcvf ../old-blackhole-"$BEFORE".tgz . && 
 # Get New Files & process to linux perfered format for parsing, then parse if needed
 echo
 echo "Getting Updated Files with Domain names of interest"
-wget http://mirror1.malwaredomains.com/files/spywaredomains.zones
-dos2unix spywaredomains.zones
-grep -vE '(//)' spywaredomains.zones | awk -F'"' '{print $2}' > just-spywaredomains
+
+function BHD_MALWAREDOMAINS_SPYWARE {
+	wget http://mirror1.malwaredomains.com/files/spywaredomains.zones
+	dos2unix spywaredomains.zones
+	grep -vE '(//)' spywaredomains.zones | awk -F'"' '{print $2}' > just-spywaredomains
+}
+
 ####################
-wget http://mirror1.malwaredomains.com/files/justdomains
-dos2unix justdomains
+function BHD_MALWAREDOMAINS_JUSTDOMAINS {
+	wget http://mirror1.malwaredomains.com/files/justdomains
+	dos2unix justdomains
+}
+
 ####################
-wget http://mirror1.malwaredomains.com/files/malwaredomains.zones
-dos2unix malwaredomains.zones
-grep -vE '(//)' malwaredomains.zones | awk -F'"' '{print $2}' > just-malwaredomains
+function BHD_MALWAREDOMAINS {
+	wget http://mirror1.malwaredomains.com/files/malwaredomains.zones
+	dos2unix malwaredomains.zones
+	grep -vE '(//)' malwaredomains.zones | awk -F'"' '{print $2}' > just-malwaredomains
+}
+
 ####################
-wget http://mirror1.malwaredomains.com/files/db.blacklist
-dos2unix db.blacklist
-grep 1.2.3.4 db.blacklist | grep -vE '(\*)' | awk '{print $1}' | sed 's/\.$//' > just-db-blacklist
+function BHD_MALWAREDOMAINS_DB_BLACKLIST {
+	wget http://mirror1.malwaredomains.com/files/db.blacklist
+	dos2unix db.blacklist
+	grep 1.2.3.4 db.blacklist | grep -vE '(\*)' | awk '{print $1}' | sed 's/\.$//' > just-db-blacklist
+}
+
 ####################
-wget http://mirror1.malwaredomains.com/files/immortal_domains.txt
-dos2unix immortal_domains.txt
-grep -vE '(^#)' immortal_domains.txt > just-immortal-domains
+function BHD_MALWAREDOMAINS_IMMORTAL_DOMAINS {
+	wget http://mirror1.malwaredomains.com/files/immortal_domains.txt
+	dos2unix immortal_domains.txt
+	grep -vE '(^#)' immortal_domains.txt > just-immortal-domains
+}
+
 ####################
-wget http://mirror1.malwaredomains.com/files/url_shorteners.txt
-dos2unix url_shortners.txt
-# The file that comes down is sorta horked, so we are removing those horked lines with grep -v
-awk '{print $1}' url_shorteners.txt | grep -vE '(#|\*)' > just-url-shortners
+function BHD_MALWAREDOMAINS_URL_SHORTNERS {
+	wget http://mirror1.malwaredomains.com/files/url_shorteners.txt
+	dos2unix url_shortners.txt
+	# The file that comes down is sorta horked, so we are removing those horked lines with grep -v
+	awk '{print $1}' url_shorteners.txt | grep -vE '(#|\*)' > just-url-shortners
+}
+
 ####################
-wget http://winhelp2002.mvps.org/hosts.txt
-dos2unix hosts.txt
-grep 0.0.0.0 hosts.txt | awk -F' ' '{print $2}' > just-hosts-domains
+function BHD_MVPS {
+	wget https://winhelp2002.mvps.org/hosts.txt
+	dos2unix hosts.txt
+	grep 0.0.0.0 hosts.txt | awk -F' ' '{print $2}' > just-hosts-domains
+}
+
 ####################
-wget http://www.malwaredomainlist.com/mdlcsv.php
-# Covers http://www.malwaredomainlist.com/updatescsv.php as well
-dos2unix mdlcsv.php
-awk -F',' '{print $2}' mdlcsv.php | awk -F'/' '{print $1}' | sort -u | grep -v '"-"' | tr -d '"' | grep -v '^$' > just-MDL-domains
+function BHD_MALWAREDOMAINS_MDLCSV {
+	wget http://www.malwaredomainlist.com/mdlcsv.php
+	# Covers http://www.malwaredomainlist.com/updatescsv.php as well
+	dos2unix mdlcsv.php
+	awk -F',' '{print $2}' mdlcsv.php | awk -F'/' '{print $1}' | sort -u | grep -v '"-"' | tr -d '"' | grep -v '^$' > just-MDL-domains
+}
+
 ####################
-#wget https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt
-#dos2unix RW_DOMBL.txt
-#grep -vE '(#)' RW_DOMBL.txt > just-rwdombl-domains
-wget https://urlhaus.abuse.ch/downloads/hostfile
-dos2unix hostfile
-grep -vE '(#)' hostfile | awk '{print $2}' > just-urlhaus-domains
+#function BHD_RW_DOMBL {
+#	wget https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt
+#	dos2unix RW_DOMBL.txt
+#	grep -vE '(#)' RW_DOMBL.txt > just-rwdombl-domains
+#}
+
+function BHD_URLHAUS {
+	wget https://urlhaus.abuse.ch/downloads/hostfile
+	dos2unix hostfile
+	grep -vE '(#)' hostfile | awk '{print $2}' > just-urlhaus-domains
+}
+
 ####################
-wget -O networksec-blocklist http://www.networksec.org/grabbho/block.txt
-dos2unix networksec-blocklist
-grep -vE '(#)' networksec-blocklist | sed '/^$/d' > just-networksec-domains
+function BHD_NETWORKSEC {
+	wget -O networksec-blocklist http://www.networksec.org/grabbho/block.txt
+	dos2unix networksec-blocklist
+	grep -vE '(#)' networksec-blocklist | sed '/^$/d' > just-networksec-domains
+}
+
 ####################
-wget -O abuse_zeus_blocklist https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist
-dos2unix abuse_zeus_blocklist
-grep -vE '(#)' abuse_zeus_blocklist | sed '/^$/d' > just-abuse-zeus-domains
+function BHD_ZEUSTRACKER {
+	wget -O abuse_zeus_blocklist https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist
+	dos2unix abuse_zeus_blocklist
+	grep -vE '(#)' abuse_zeus_blocklist | sed '/^$/d' > just-abuse-zeus-domains
+}
+
 ####################
-#wget -O abuse_freodotracker_blocklist https://feodotracker.abuse.ch/blocklist/?download=domainblocklist
-#dos2unix abuse_freodotracker_blocklist
-#grep -vE '(#)' abuse_freodotracker_blocklist | sed '/^$/d' > just-abuse-freodo-domains
+function BHD_FREADOTRACKER {
+	wget -O abuse_freodotracker_blocklist https://feodotracker.abuse.ch/blocklist/?download=domainblocklist
+	dos2unix abuse_freodotracker_blocklist
+	grep -vE '(#)' abuse_freodotracker_blocklist | sed '/^$/d' > just-abuse-freodo-domains
+}
+
 ####################
-wget -O abuse_cryptowall_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/CW_C2_DOMBL.txt
-dos2unix abuse_cryptowall_c2_blocklist
-grep -vE '(#)' abuse_cryptowall_c2_blocklist | sed '/^$/d' > just-abuse-cryptowallc2-domains
+function BHD_CW_C2_DOMBL {
+	wget -O abuse_cryptowall_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/CW_C2_DOMBL.txt
+	dos2unix abuse_cryptowall_c2_blocklist
+	grep -vE '(#)' abuse_cryptowall_c2_blocklist | sed '/^$/d' > just-abuse-cryptowallc2-domains
+}
+
+###################
+function BHD_TC_C2_DOMBL {
+	wget -O abuse_teslacrypt_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/TC_C2_DOMBL.txt
+	dos2unix abuse_teslacrypt_c2_blocklist
+	grep -vE '(#)' abuse_teslacrypt_c2_blocklist | sed '/^$/d' > just-abuse-teslacryptc2-domains
+}
+
 ####################
-wget -O abuse_teslacrypt_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/TC_C2_DOMBL.txt
-dos2unix abuse_teslacrypt_c2_blocklist
-grep -vE '(#)' abuse_teslacrypt_c2_blocklist | sed '/^$/d' > just-abuse-teslacryptc2-domains
+function BHD_LY_C2_DOMBL {
+	wget -O abuse_locky_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/LY_C2_DOMBL.txt
+	dos2unix abuse_locky_c2_blocklist
+	grep -vE '(#)' abuse_locky_c2_blocklist | sed '/^$/d' > just-abuse-lockyc2-domains
+}
+
 ####################
-wget -O abuse_locky_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/LY_C2_DOMBL.txt
-dos2unix abuse_locky_c2_blocklist
-grep -vE '(#)' abuse_locky_c2_blocklist | sed '/^$/d' > just-abuse-lockyc2-domains
+function BHD_TL_C2_DOMBL {
+	wget -O abuse_torrentlocker_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/TL_C2_DOMBL.txt
+	dos2unix abuse_torrentlocker_c2_blocklist
+	grep -vE '(#)' abuse_torrentlocker_c2_blocklist | sed '/^$/d' > just-abuse-torrentlockerc2-domains
+}
+
 ####################
-wget -O abuse_torrentlocker_c2_blocklist https://ransomwaretracker.abuse.ch/downloads/TL_C2_DOMBL.txt
-dos2unix abuse_torrentlocker_c2_blocklist
-grep -vE '(#)' abuse_torrentlocker_c2_blocklist | sed '/^$/d' > just-abuse-torrentlockerc2-domains
+function BHD_SANS_SUSPECT_HIGH {
+	wget -O sans-suspiciousdomains_high.txt http://www.dshield.org/feeds/suspiciousdomains_High.txt
+	dos2unix sans-suspiciousdomains_high.txt
+	grep -vE '(#)' sans-suspiciousdomains_high.txt | tail -n+2 > just-sans-high-domains
+}
+
 ####################
-wget -O sans-suspiciousdomains_high.txt https://isc.sans.edu/feeds/suspiciousdomains_High.txt
-dos2unix sans-suspiciousdomains_high.txt
-grep -vE '(#)' sans-suspiciousdomains_high.txt | tail -n+2 > just-sans-high-domains
+function BHD_SANS_SUSPECT_MEDIUM {
+	wget -O sans-suspiciousdomains_medium.txt https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt
+	dos2unix sans-suspiciousdomains_medium.txt
+	grep -vE '(#)' sans-suspiciousdomains_medium.txt | tail -n+2 > just-sans-medium-domains
+}
+
 ####################
-wget -O sans-suspiciousdomains_medium.txt https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt
-dos2unix sans-suspiciousdomains_medium.txt
-grep -vE '(#)' sans-suspiciousdomains_medium.txt | tail -n+2 > just-sans-medium-domains
-####################
-wget -O sans-suspiciousdomains_low.txt https://isc.sans.edu/feeds/suspiciousdomains_Low.txt
-dos2unix sans-suspiciousdomains_low.txt
-grep -vE '(#)' sans-suspiciousdomains_low.txt | tail -n+2 > just-sans-low-domains
+# function BHD_SANS_SUSPECT_LOW {
+# 	wget -O sans-suspiciousdomains_low.txt http://www.dshield.org/feeds/suspiciousdomains_Low.txt
+# 	dos2unix sans-suspiciousdomains_low.txt
+# 	grep -vE '(#)' sans-suspiciousdomains_low.txt | tail -n+2 > just-sans-low-domains
+# }
 #
 #
 ####################################################
@@ -119,27 +179,68 @@ cp full-parsed old/
 COUNTS
 echo
 echo "Compile into Full-List"
+BHD_MALWAREDOMAINS_SPYWARE
 cat just-spywaredomains > full-list
+
+BHD_MALWAREDOMAINS_JUSTDOMAINS
 cat justdomains >> full-list
+
+BHD_MALWAREDOMAINS
 cat just-malwaredomains >> full-list
+
+BHD_MALWAREDOMAINS_DB_BLACKLIST
 cat just-db-blacklist >> full-list
+
+BHD_MALWAREDOMAINS_IMMORTAL_DOMAINS
 cat just-immortal-domains >> full-list
+
+BHD_MVPS
 cat just-hosts-domains >> full-list
+
+BHD_MALWAREDOMAINS_MDLCSV
 cat just-MDL-domains >> full-list
-#cat just-url-shortners >> full-list
-#cat just-rwdombl-domains >> full-list
+
+# BHD_MALWAREDOMAINS_URL_SHORTNERS
+# cat just-url-shortners >> full-list
+
+BHD_RW_DOMBL
+cat just-rwdombl-domains >> full-list
+
+BHD_URLHAUS
 cat just-urlhaus-domains >> full-list
+
+BHD_NETWORKSEC
 cat just-networksec-domains >> full-list
+
+BHD_ZEUSTRACKER
 cat just-abuse-zeus-domains >> full-list
+
+#BHD_FREADOTRACKER
 #cat just-abuse-freodo-domains >> full-list
+
+BHD_CW_C2_DOMBL
 cat just-abuse-cryptowallc2-domains >> full-list
+
+BHD_TC_C2_DOMBL
 cat just-abuse-teslacryptc2-domains >> full-list
+
+BHD_LY_C2_DOMBL
 cat just-abuse-lockyc2-domains >> full-list
+
+BHD_TL_C2_DOMBL
 cat just-abuse-torrentlockerc2-domains >> full-list
+
+BHD_SANS_SUSPECT_HIGH
 cat just-sans-high-domains >> full-list
+
+BHD_SANS_SUSPECT_MEDIUM
 cat just-sans-medium-domains >> full-list
+
+#BHD_SANS_SUSPECT_LOW
 #cat just-sans-low-domains >> full-list
+
 cat myblocklist >> full-list
+
 #
 ########################################################################
 # Pull out duplicates and other items that might show that we dont want
